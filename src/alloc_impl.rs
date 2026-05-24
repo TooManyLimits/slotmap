@@ -64,6 +64,8 @@ mod _impl_ {
         core::alloc::Allocator,
         alloc::alloc::Global,
     };
+    #[cfg(test)] pub use alloc::alloc::AllocError;
+    
     use std::ops::{Deref, DerefMut};
 
     #[repr(transparent)]
@@ -113,6 +115,8 @@ mod _impl_ {
         alloc::Allocator,
         alloc::Global,
     };
+    #[cfg(test)] pub use allocator_api2::alloc::AllocError;
+
     use std::ops::{Deref, DerefMut};
 
     #[repr(transparent)]

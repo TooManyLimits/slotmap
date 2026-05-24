@@ -1584,6 +1584,38 @@ mod tests {
         }
     }
 
+    #[cfg(any(feature = "nightly", feature = "allocator-api2"))]
+    #[test]
+    fn custom_allocator() {
+        use core::sync::atomic::{AtomicUsize, Ordering};
+
+        struct TestAlloc {
+            allocated_bytes: AtomicUsize
+        }
+        unsafe impl Allocator for TestAlloc {
+            fn allocate(&self, layout: core::alloc::Layout) -> Result<core::ptr::NonNull<[u8]>, AllocError> {
+                self.allocated_bytes.fetch_add(layout.size(), Ordering::AcqRel);
+                Global.allocate(layout)
+            }
+            unsafe fn deallocate(&self, ptr: core::ptr::NonNull<u8>, layout: core::alloc::Layout) {
+                self.allocated_bytes.fetch_sub(layout.size(), Ordering::AcqRel);
+                Global.deallocate(ptr, layout);
+            }
+        }
+
+        let alloc = TestAlloc { allocated_bytes: AtomicUsize::new(0) };
+
+        let mut sm: SlotMap<DefaultKey, usize, &TestAlloc> = SlotMap::new_in(&alloc).expect("Failed to allocate initial map");
+        // Ensure initial allocation is tracked
+        assert!(alloc.allocated_bytes.load(Ordering::Acquire) > 0);
+        // Ensure tracked allocation is big enough and makes sense with how many things we inserted
+        for i in 0..1000 { sm.insert(i * i); }
+        assert!(alloc.allocated_bytes.load(Ordering::Acquire) > 1000 * size_of::<usize>());
+        // Ensure that when we drop, everything is freed using the allocator
+        drop(sm);
+        assert!(alloc.allocated_bytes.load(Ordering::Acquire) == 0);
+    }
+
     quickcheck! {
         fn qc_slotmap_equiv_hashmap(operations: alloc::vec::Vec<(u8, u32)>) -> bool {
             let mut hm = HashMap::new();
