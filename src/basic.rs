@@ -6,10 +6,9 @@ use core::marker::PhantomData;
 use core::mem::{ManuallyDrop, MaybeUninit};
 use core::ops::{Index, IndexMut};
 
+use crate::alloc_impl::*;
 use crate::util::{Never, PanicOnDrop, UnwrapNever};
 use crate::{DefaultKey, Key, KeyData};
-
-use crate::alloc_impl::*;
 
 // Storage inside a slot or metadata for the freelist when vacant.
 union SlotUnion<T> {
@@ -133,7 +132,7 @@ pub struct SlotMap<K: Key, V, A: Allocator = Global> {
     _k: PhantomData<fn(K) -> K>,
 }
 
-impl <V> SlotMap<DefaultKey, V, Global> {
+impl<V> SlotMap<DefaultKey, V, Global> {
     /// Constructs a new, empty [`SlotMap`].
     ///
     /// # Examples
@@ -162,7 +161,7 @@ impl <V> SlotMap<DefaultKey, V, Global> {
     }
 }
 
-impl <K: Key, V> SlotMap<K, V, Global> {
+impl<K: Key, V> SlotMap<K, V, Global> {
     /// Constructs a new, empty [`SlotMap`] with a custom key type.
     ///
     /// # Examples
@@ -216,7 +215,7 @@ impl <K: Key, V> SlotMap<K, V, Global> {
     }
 }
 
-impl <V, A: Allocator> SlotMap<DefaultKey, V, A> {
+impl<V, A: Allocator> SlotMap<DefaultKey, V, A> {
     /// Constructs a new, empty [`SlotMap`] in the given Allocator.
     pub fn new_in(allocator: A) -> Result<Self, TryReserveError> {
         Self::with_capacity_and_key_in(0, allocator)
@@ -231,7 +230,6 @@ impl <V, A: Allocator> SlotMap<DefaultKey, V, A> {
 }
 
 impl<K: Key, V, A: Allocator> SlotMap<K, V, A> {
-    
     /// Constructs a new, empty [`SlotMap`] with a custom key type in the given Allocator.
     pub fn with_key_in(allocator: A) -> Result<Self, TryReserveError> {
         Self::with_capacity_and_key_in(0, allocator)
@@ -242,7 +240,10 @@ impl<K: Key, V, A: Allocator> SlotMap<K, V, A> {
     ///
     /// The slot map will not reallocate until it holds at least `capacity`
     /// elements.
-    pub fn with_capacity_and_key_in(capacity: usize, allocator: A) -> Result<Self, TryReserveError> {
+    pub fn with_capacity_and_key_in(
+        capacity: usize,
+        allocator: A,
+    ) -> Result<Self, TryReserveError> {
         // Create slots with a sentinel at index 0.
         // We don't actually use the sentinel for anything currently, but
         // HopSlotMap does, and if we want keys to remain valid through
@@ -1056,7 +1057,8 @@ impl<K: Key, V, A: Allocator> SlotMap<K, V, A> {
 
 impl<K: Key, V, A: Allocator> Clone for SlotMap<K, V, A>
 where
-    V: Clone, A: Clone
+    V: Clone,
+    A: Clone,
 {
     fn clone(&self) -> Self {
         Self {
@@ -1592,26 +1594,36 @@ mod tests {
         use core::sync::atomic::{AtomicUsize, Ordering};
 
         struct TestAlloc {
-            allocated_bytes: AtomicUsize
+            allocated_bytes: AtomicUsize,
         }
         unsafe impl Allocator for TestAlloc {
-            fn allocate(&self, layout: core::alloc::Layout) -> Result<core::ptr::NonNull<[u8]>, AllocError> {
-                self.allocated_bytes.fetch_add(layout.size(), Ordering::AcqRel);
+            fn allocate(
+                &self,
+                layout: core::alloc::Layout,
+            ) -> Result<core::ptr::NonNull<[u8]>, AllocError> {
+                self.allocated_bytes
+                    .fetch_add(layout.size(), Ordering::AcqRel);
                 Global.allocate(layout)
             }
             unsafe fn deallocate(&self, ptr: core::ptr::NonNull<u8>, layout: core::alloc::Layout) {
-                self.allocated_bytes.fetch_sub(layout.size(), Ordering::AcqRel);
+                self.allocated_bytes
+                    .fetch_sub(layout.size(), Ordering::AcqRel);
                 Global.deallocate(ptr, layout);
             }
         }
 
-        let alloc = TestAlloc { allocated_bytes: AtomicUsize::new(0) };
+        let alloc = TestAlloc {
+            allocated_bytes: AtomicUsize::new(0),
+        };
 
-        let mut sm: SlotMap<DefaultKey, usize, &TestAlloc> = SlotMap::new_in(&alloc).expect("Failed to allocate initial map");
+        let mut sm: SlotMap<DefaultKey, usize, &TestAlloc> =
+            SlotMap::new_in(&alloc).expect("Failed to allocate initial map");
         // Ensure initial allocation is tracked
         assert!(alloc.allocated_bytes.load(Ordering::Acquire) > 0);
         // Ensure tracked allocation is big enough and makes sense with how many things we inserted
-        for i in 0..1000 { sm.insert(i * i); }
+        for i in 0..1000 {
+            sm.insert(i * i);
+        }
         assert!(alloc.allocated_bytes.load(Ordering::Acquire) > 1000 * size_of::<usize>());
         // Ensure that when we drop, everything is freed using the allocator
         drop(sm);
