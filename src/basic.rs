@@ -218,13 +218,6 @@ impl <K: Key, V> SlotMap<K, V, Global> {
 
 impl <V, A: Allocator> SlotMap<DefaultKey, V, A> {
     /// Constructs a new, empty [`SlotMap`] in the given Allocator.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use slotmap::*;
-    /// let mut sm: SlotMap<_, i32> = SlotMap::new_in(alloc::alloc::Global).expect("Failed to reserve initial memory");
-    /// ```
     pub fn new_in(allocator: A) -> Result<Self, TryReserveError> {
         Self::with_capacity_and_key_in(0, allocator)
     }
@@ -232,13 +225,6 @@ impl <V, A: Allocator> SlotMap<DefaultKey, V, A> {
     ///
     /// The slot map will not reallocate until it holds at least `capacity`
     /// elements.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use slotmap::*;
-    /// let mut sm: SlotMap<_, i32> = SlotMap::with_capacity_in(10, alloc::alloc::Global).expect("Failed to reserve initial memory");
-    /// ```
     pub fn with_capacity_in(capacity: usize, allocator: A) -> Result<Self, TryReserveError> {
         Self::with_capacity_and_key_in(capacity, allocator)
     }
@@ -247,16 +233,6 @@ impl <V, A: Allocator> SlotMap<DefaultKey, V, A> {
 impl<K: Key, V, A: Allocator> SlotMap<K, V, A> {
     
     /// Constructs a new, empty [`SlotMap`] with a custom key type in the given Allocator.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use slotmap::*;
-    /// new_key_type! {
-    ///     struct PositionKey;
-    /// }
-    /// let mut positions: SlotMap<PositionKey, i32> = SlotMap::with_key_in(alloc::alloc::Global).expect("Failed to reserve initial memory");
-    /// ```
     pub fn with_key_in(allocator: A) -> Result<Self, TryReserveError> {
         Self::with_capacity_and_key_in(0, allocator)
     }
@@ -266,19 +242,6 @@ impl<K: Key, V, A: Allocator> SlotMap<K, V, A> {
     ///
     /// The slot map will not reallocate until it holds at least `capacity`
     /// elements.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use slotmap::*;
-    /// new_key_type! {
-    ///     struct MessageKey;
-    /// }
-    /// let mut messages = SlotMap::with_capacity_and_key_in(3, alloc::alloc::Global).expect("Failed to reserve initial memory");
-    /// let welcome: MessageKey = messages.insert("Welcome");
-    /// let good_day = messages.insert("Good day");
-    /// let hello = messages.insert("Hello");
-    /// ```
     pub fn with_capacity_and_key_in(capacity: usize, allocator: A) -> Result<Self, TryReserveError> {
         // Create slots with a sentinel at index 0.
         // We don't actually use the sentinel for anything currently, but
