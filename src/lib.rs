@@ -2,6 +2,7 @@
 #![crate_name = "slotmap"]
 #![cfg_attr(all(not(test), not(feature = "std")), no_std)]
 #![cfg_attr(all(nightly, doc), feature(doc_cfg))]
+#![cfg_attr(all(feature = "nightly"), feature(allocator_api))]
 #![warn(
     missing_debug_implementations,
     trivial_casts,
@@ -199,6 +200,7 @@ pub mod __impl {
     pub use serde::{Deserialize, Deserializer, Serialize, Serializer};
 }
 
+pub(crate) mod alloc_impl;
 pub mod basic;
 pub mod dense;
 pub mod hop;
