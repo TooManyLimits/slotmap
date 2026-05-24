@@ -16,6 +16,7 @@ default = ["std"]
 unstable = []
 std = []
 nightly = []
+serde = ["dep:serde", "allocator-api2?/serde"]
 
 [dependencies]
 allocator-api2 = { version = "0.2.18", optional = true, default-features = false, features = ["alloc"] }

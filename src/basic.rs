@@ -1435,7 +1435,7 @@ mod serialize {
         }
     }
 
-    impl<K: Key, V: Serialize> Serialize for SlotMap<K, V> {
+    impl<K: Key, V: Serialize, A: Allocator> Serialize for SlotMap<K, V, A> {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where
             S: Serializer,
@@ -1453,7 +1453,9 @@ mod serialize {
         where
             D: Deserializer<'de>,
         {
-            let mut slots: Vec<Slot<V>> = Deserialize::deserialize(deserializer)?;
+            let slots: Vec<Slot<V>> = Deserialize::deserialize(deserializer)?;
+            let mut slots = VecWrap::wrap(slots);
+
             if slots.len() >= u32::MAX as usize {
                 return Err(de::Error::custom("too many slots"));
             }
