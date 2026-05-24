@@ -207,6 +207,8 @@ pub mod hop;
 pub mod secondary;
 #[cfg(feature = "std")]
 pub mod sparse_secondary;
+#[cfg(all(test, not(feature = "std")))]
+mod sparse_secondary; // If we're testing without std, we still want access to SparseSecondaryMap so tests using it can compile
 pub(crate) mod util;
 
 use core::fmt::{self, Debug, Formatter};
@@ -595,6 +597,7 @@ mod tests {
 
     #[test]
     fn iters_cloneable() {
+        use super::sparse_secondary::SparseSecondaryMap;
         use super::*;
 
         struct NoClone;

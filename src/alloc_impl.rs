@@ -8,8 +8,9 @@ pub use _impl_::*;
 #[cfg(not(any(feature = "nightly", feature = "allocator-api2")))]
 mod _impl_ {
     pub use alloc::collections::TryReserveError;
-    use std::marker::PhantomData;
-    use std::ops::{Deref, DerefMut};
+    pub use alloc::vec::Vec;
+    use core::marker::PhantomData;
+    use core::ops::{Deref, DerefMut};
 
     pub trait Allocator {}
     #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -82,10 +83,10 @@ mod _impl_ {
 mod _impl_ {
     #[cfg(test)]
     pub use alloc::alloc::AllocError;
-    pub use alloc::alloc::Global;
+    pub use alloc::alloc::{Allocator, Global};
     pub use alloc::collections::TryReserveError;
-    pub use core::alloc::Allocator;
-    use std::ops::{Deref, DerefMut};
+    pub use alloc::vec::Vec;
+    use core::ops::{Deref, DerefMut};
 
     #[repr(transparent)]
     #[derive(Debug, Clone)]
@@ -151,7 +152,7 @@ mod _impl_ {
 // If not on nightly, but allocator-api2 is enabled: use it
 #[cfg(all(not(feature = "nightly"), feature = "allocator-api2"))]
 mod _impl_ {
-    use std::ops::{Deref, DerefMut};
+    use core::ops::{Deref, DerefMut};
 
     #[cfg(test)]
     pub use allocator_api2::alloc::AllocError;
